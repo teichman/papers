@@ -1,0 +1,90 @@
+#!/bin/bash
+
+#wget --header="Accept: text/html" --user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0" https://arxiv.org/abs/1706.03762
+
+# if [ $# -lt 2 ]; then
+#     echo Usage: add URL KEY [TAG ...]
+#     exit
+# fi
+
+
+if [ $(pwd) != $HOME/sync/papers ]; then
+    echo You must be in the sync/papers dir to use this script.
+    exit
+fi
+
+
+URL=$1
+META=.arxiv_download.meta
+
+echo "Downloading metadata."
+wget --quiet --header="Accept: text/html" --user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0" $URL -O $META
+
+TITLE=$(grep citation_title $META | awk -F\" '{print $4}')
+AUTHORS=$(grep citation_author $META | awk -F\" '{print $4 " and"}' | xargs -n1 | sed '$d' | xargs)  # Remove final "and"
+YEAR=$(grep citation_date $META | awk -F\" '{print $4}' | awk -F\/ '{print $1}')
+FIRST_AUTHOR_FIRSTNAME=$(grep citation_author $META | awk -F\" '{print $4}'  | head -n1 | awk -F, '{print $2}')
+FIRST_AUTHOR_LASTNAME=$(grep citation_author $META | awk -F\" '{print $4}'  | head -n1 | awk -F, '{print $1}')
+
+# Check if this paper already exists.
+if [ "$(grep "$TITLE" library.bib)" != "" ]; then
+    echo
+    echo "============================================================"
+    echo "= It appears this paper is already in library.bib.  Exiting."
+    echo "============================================================"
+    echo 
+    grep -A10 "$TITLE" library.bib
+    echo "..."
+    exit
+fi
+
+echo "Downloading pdf."
+KEYBASE=$(echo $FIRST_AUTHOR_LASTNAME$YEAR | tr '[:upper:]' '[:lower:]')
+KEYLETTER=a
+KEY=$KEYBASE$KEYLETTER
+
+ARXIV_NUM=$(echo $URL | awk -F/ '{print $NF}')
+PDF=.arxiv_download.pdf
+wget --header="Accept: text/html" --user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0" https://arxiv.org/pdf/$ARXIV_NUM.pdf -O $PDF
+
+
+# I did something gross and just copied the code from `add`.
+
+# -- Check for existence of this key.
+
+while [ "$(grep $KEY library.bib)" != "" ]; do
+    echo Key $KEY exists already or is a substring of an existing string.
+    echo 'Matches:'
+    grep $KEY library.bib
+
+    KEYLETTER=$(echo "$KEYLETTER" | tr "0-9a-z" "1-9a-z_")
+    KEY=$KEYBASE$KEYLETTER
+done
+
+echo "Using key: $KEY"
+
+
+# -- Add to library as pdf and text.
+
+cp "$PDF" ~/sync/papers/pdf/$KEY.pdf
+pdftotext -enc ASCII7 "$PDF" ~/sync/papers/txt/$KEY.txt 2>/dev/null  # Sometimes pdftotext spits out horrible garbage.
+echo Added paper "$PDF" with key $KEY.
+rm "$PDF"
+echo Removed old copy of paper: "$PDF"
+
+
+# -- Append to library.bib.
+
+echo "@inproceedings{$KEY,"                             | tee -a library.bib
+echo "title = {$TITLE},"                                | tee -a library.bib
+echo "author = {$AUTHORS},"                             | tee -a library.bib
+echo "booktitle = {},"                                  | tee -a library.bib
+echo "year = {$YEAR},"                                  | tee -a library.bib
+echo "annote = { "                                      | tee -a library.bib
+echo                                                    | tee -a library.bib
+echo "},"                                               | tee -a library.bib
+echo "file = {home/teichman/sync/papers/pdf/$KEY.pdf}," | tee -a library.bib
+echo "}"                                                | tee -a library.bib
+echo                                                    | tee -a library.bib
+
+rm $META

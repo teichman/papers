@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ `uname` == "Darwin" ]; then
+    open pdf/${1}.pdf
+else
+    evince pdf/${1}.pdf > /dev/null 2>&1 &
+fi

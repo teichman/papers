@@ -1,0 +1,93 @@
+#!/bin/sh
+
+# It'd be amazing if this could show one per line, with key on the left and title on the right.
+_entry()
+{
+    local curr prev
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    keys=$(cat $HOME/sync/papers/library.bib | grep '@.*{.*,' | awk -F'{' '{print $2}' | awk -F',' '{print $1}')
+    COMPREPLY=( $(compgen -W "$keys" $cur) )
+    return 0
+}
+
+_tag()
+{
+    local curr prev
+    cur="${COMP_WORDS[COMP_CWORD]}" # The current word being typed.
+    prev="${COMP_WORDS[COMP_CWORD-1]}" # The previous word that was typed.
+    
+    # -- If prev is ./tag, then complete with existing tags.
+    #    If prev is a tag (anything other than ./tag), then complete with keys.
+    if [ $prev == "./tag" ]; then
+	tags=$(ls $HOME/sync/papers/tags)
+	COMPREPLY=( $(compgen -W "$tags" $cur) )
+    else
+	keys=$(cat $HOME/sync/papers/library.bib | grep '@.*{.*,' | awk -F'{' '{print $2}' | awk -F',' '{print $1}')
+	COMPREPLY=( $(compgen -W "$keys" $cur) )
+    fi
+    
+    return 0
+}
+
+_rename()
+{
+    local curr prev
+    cur="${COMP_WORDS[COMP_CWORD]}" # The current word being typed.
+    prev="${COMP_WORDS[COMP_CWORD-1]}" # The previous word that was typed.
+    
+    
+    if [ ${#COMP_WORDS[@]} -lt 4 ]; then
+	keys=$(cat $HOME/sync/papers/library.bib | grep '@.*{.*,' | awk -F'{' '{print $2}' | awk -F',' '{print $1}')
+	COMPREPLY=( $(compgen -W "$keys" $cur) )
+    else
+	COMPREPLY=()
+    fi
+    
+    return 0
+}
+
+_add()
+{
+    local curr prev
+    cur="${COMP_WORDS[COMP_CWORD]}" # The current word being typed.
+    prev="${COMP_WORDS[COMP_CWORD-1]}" # The previous word that was typed.
+
+
+    if [ ${#COMP_WORDS[@]} -eq 2 ]; then
+	_filedir
+    elif [ ${#COMP_WORDS[@]} -eq 3 ]; then
+	_entry
+    elif [ ${#COMP_WORDS[@]} -gt 3 ]; then
+	tags=$(ls $HOME/sync/papers/tags)
+	COMPREPLY=( $(compgen -W "$tags" $cur) )
+    else
+	COMPREPLY=()
+    fi
+        
+    return 0
+}
+
+_send_paper()
+{
+    local curr prev
+    cur="${COMP_WORDS[COMP_CWORD]}" # The current word being typed.
+    prev="${COMP_WORDS[COMP_CWORD-1]}" # The previous word that was typed.
+    
+    # -- If prev is ./send_paper, then complete with keys.
+    #    If prev is a tag (anything other than ./tag), then complete with keys.
+    if [ $prev == "./send_paper" ]; then
+	keys=$(cat $HOME/sync/papers/library.bib | grep '@.*{.*,' | awk -F'{' '{print $2}' | awk -F',' '{print $1}')
+	COMPREPLY=( $(compgen -W "$keys" $cur) )
+    else
+	emails=$(cat $HOME/sync/papers/.emails)
+	COMPREPLY=( $(compgen -W "$emails" $cur) )
+    fi
+    
+    return 0
+}
+
+complete -F _entry entry remove read
+complete -F _tag tag
+complete -F _rename rename
+complete -F _add add
+complete -F _send_paper send_paper

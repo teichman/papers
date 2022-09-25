@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# -- Check args.
+if [ $# -lt 2 ]; then
+    echo Usage: add FILENAME KEY [TAG ...]
+    exit
+fi
+
+if [ $(pwd) != $HOME/sync/papers ]; then
+    echo You must be in the sync/papers dir to use this script.
+    exit
+fi
+
+# -- Check for existence of this key.
+if [ "$(grep $2 library.bib)" != "" ]; then 
+    echo Key $2 exists already or is a substring of an existing string.
+    echo 'Matches:'
+    grep $2 library.bib
+    echo 
+    echo Substrings of existing strings are not allowed so as to make text munging of library.bib easy.  Aborting.
+    exit
+fi
+
+# -- Add to library as pdf and text.
+cp "$1" ~/sync/papers/pdf/$2.pdf
+pdftotext -enc ASCII7 "$1" ~/sync/papers/txt/$2.txt 2>/dev/null  # Sometimes pdftotext spits out horrible garbage.
+echo Added paper "$1" with key $2.
+rm "$1"
+echo Removed old copy of paper: "$1"
+
+# -- Append to library.bib.
+echo "@inproceedings{$2," >> library.bib
+echo "title = {}," >> library.bib
+echo "author = {}," >> library.bib
+echo "booktitle = {}," >> library.bib
+echo "year = {}," >> library.bib
+echo "annote = {}," >> library.bib
+echo "file = {home/teichman/sync/papers/pdf/$2.pdf}," >> library.bib
+echo "}" >> library.bib
+echo "" >> library.bib
+echo Appended entry to library.bib.
+
+# -- Add tags.
+KEY=$2
+shift 2
+for arg in "$@"; do
+    ./tag $1 $KEY
+    shift 1
+done
+

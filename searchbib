@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if [ $# -lt 1 ]; then
+    echo Usage: $0 STRING
+    exit
+fi
+
+tmp="$@" # Strangely, I can't just put ""$@"" in the following.
+sed -e '/^[^@]*$/{H;$!d;}' -e 'x;/'"$tmp"'/I!d' library.bib | egrep --color "$tmp|\$" 

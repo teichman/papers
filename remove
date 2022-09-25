@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+    echo Usage: remove_paper KEY
+    exit
+fi
+
+if [ $(pwd) != /home/teichman/sync/papers ]; then
+    echo You must be in the sync/papers dir to use this script.
+    exit
+fi
+
+# -- Delete files.
+echo Removing the following files.
+echo $(find -name "$1.pdf") | xargs -n1 
+echo $(find -name "$1.txt") | xargs -n1
+
+rm $(find -name "$1.pdf")
+rm $(find -name "$1.txt")
+
+# -- Remove the entry from the bibtex.
+echo TODO: Remove entry from bibtex.

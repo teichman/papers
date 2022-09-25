@@ -1,0 +1,45 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+    echo Usage: rename OLD_KEY NEW_KEY
+    exit
+fi
+
+if [ $(pwd) != /home/teichman/sync/papers ]; then
+    echo You must be in the sync/papers dir to use this script.
+    exit
+fi
+
+# -- Check for existence of this key.
+#if [ "$(grep $2 library.bib)" != "" ]; then
+if [ 1 == 2 ]; then
+    echo Key $2 exists already or is a substring of an existing string.
+    echo 'Matches:'
+    grep $2 library.bib
+    echo 
+    echo Substrings of existing strings are not allowed so as to make text munging of library.bib easy.  Aborting.
+    exit
+fi
+
+# -- If any exist, rename files that match the old key.
+#    Also make old symlinks point to the new targets.
+if [ -z "$(find -name "$1.pdf")" ]; then
+    echo Warning: no files found matching $1.
+else
+    rename -v "s/$1/$2/g" $(find -name "$1.pdf") $(find -name "$1.txt")
+    for link in $(find tags/ -name "$2.pdf"); do
+	rm $link
+	ln -s ../../../pdf/$2.pdf $link
+    done
+    for link in $(find tags/ -name "$2.txt"); do
+	rm $link
+	ln -s ../../../txt/$2.txt $link
+    done
+fi
+
+# -- Rename keys in the bib file.
+echo 'Changing the following lines in library.bib:'
+grep $1 library.bib
+sed -i "s/$1/$2/g" library.bib
+echo Done.
+
