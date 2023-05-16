@@ -2,10 +2,10 @@
 
 #wget --header="Accept: text/html" --user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0" https://arxiv.org/abs/1706.03762
 
-# if [ $# -lt 2 ]; then
-#     echo Usage: add URL KEY [TAG ...]
-#     exit
-# fi
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 URL"
+    exit
+fi
 
 
 if [ $(pwd) != $HOME/sync/papers ]; then
@@ -16,9 +16,16 @@ fi
 
 URL=$1
 META=.arxiv_download.meta
+rm -f $META
 
 echo "Downloading metadata."
-wget --quiet --header="Accept: text/html" --user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0" $URL -O $META
+curl -s -H "Accept: text/html" -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0" -o $META $URL
+#wget --quiet --header="Accept: text/html" --user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0" $URL -O $META
+
+if [[ ! -f "$META" ]]; then
+  echo "Something went wrong downloading arxiv metadata to $META"
+  exit 1
+fi
 
 TITLE=$(grep citation_title $META | awk -F\" '{print $4}')
 AUTHORS=$(grep citation_author $META | awk -F\" '{print $4 " and"}' | xargs -n1 | sed '$d' | xargs)  # Remove final "and"
@@ -45,7 +52,8 @@ KEY=$KEYBASE$KEYLETTER
 
 ARXIV_NUM=$(echo $URL | awk -F/ '{print $NF}')
 PDF=.arxiv_download.pdf
-wget --header="Accept: text/html" --user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0" https://arxiv.org/pdf/$ARXIV_NUM.pdf -O $PDF
+#wget --header="Accept: text/html" --user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0" https://arxiv.org/pdf/$ARXIV_NUM.pdf -O $PDF
+curl -H "Accept: text/html" -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0" -o $PDF "https://arxiv.org/pdf/$ARXIV_NUM.pdf"
 
 
 # I did something gross and just copied the code from `add`.

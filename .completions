@@ -52,9 +52,16 @@ _add()
     cur="${COMP_WORDS[COMP_CWORD]}" # The current word being typed.
     prev="${COMP_WORDS[COMP_CWORD-1]}" # The previous word that was typed.
 
-
     if [ ${#COMP_WORDS[@]} -eq 2 ]; then
-	_filedir
+        # Unfortunately this doesn't work in zsh.
+        # Need to find a fix...
+        # _filedir
+        
+        _complete
+        
+        # keys=$(ls $curcat $HOME/sync/papers/library.bib | grep '@.*{.*,' | awk -F'{' '{print $2}' | awk -F',' '{print $1}')
+        # COMPREPLY=( $(compgen -W "$keys" $cur) )
+
     elif [ ${#COMP_WORDS[@]} -eq 3 ]; then
 	_entry
     elif [ ${#COMP_WORDS[@]} -gt 3 ]; then

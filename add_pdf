@@ -2,7 +2,7 @@
 
 # -- Check args.
 if [ $# -lt 2 ]; then
-    echo Usage: add FILENAME KEY [TAG ...]
+    echo Usage: $0 FILENAME KEY [TAG ...]
     exit
 fi
 
